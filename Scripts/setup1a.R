@@ -17,11 +17,12 @@ dev.new()
 
 library(tidyverse)
 library(magrittr)
-library(org.Hs.eg.db)
+#library(org.Hs.eg.db) 
 library(EDASeq)
 library(GEOquery)
 library(SingleCellExperiment)
-library(MAST)
+library(MAST) #renv::install("RGLab/MAST@bb1e928c2fc7bcd2fdbf19472e43bf6848e9c4dc")
+#Keep "RSQLite@2.2.5"
 
 ################################################################################
 #Data sub-folder inside the project
@@ -47,6 +48,9 @@ raw_gene$symbol <- egSymbol_tb$alias_symbol[m]
 
 #Require the gene length
 #... options: mode = c("biomart", "org.db")
-#... choose: "BSgenome.Hsapiens.UCSC.hg18"
+#... choose: "TxDb.Hsapiens.UCSC.hg19.knownGene", "BSgenome.Hsapiens.UCSC.hg19"
+#Keep "RSQLite@2.2.5"
+#> save.image(file = "./Data/setup1_a3_sav.RData") 
+#...after finishing
 #Continue to setup1b
 gene_info <- getGeneLengthAndGCContent(raw_gene$Ensembl, org = "hsa", mode = "org.db")
