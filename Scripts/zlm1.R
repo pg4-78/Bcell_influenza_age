@@ -1,24 +1,41 @@
-#Clear
-#...variables
-rm(list=ls())
-#...console
-cat("\014\n")
-#...graphs
-tryCatch(dev.off(), error = function(e) {NULL})
-dev.new()
-
-library(tidyverse)
-library(magrittr)
-library(MAST)
-
-#Load data results of "setup1a.R", "setup1b.R"?
-#Alternatively, re-run the setup scripts
+#Immediately after setup1a, setup1b
+#Alternatively, load saved results of setup1a, setup1b
 if (TRUE) {
-  load(file = "./Data/setup1_a_sav.RData")
+  #Clear
+  #...variables
+  rm(list=ls())
+  #...console
+  cat("\014\n")
+  #...graphs
+  tryCatch(dev.off(), error = function(e) {NULL})
+  dev.new()
+  
+  library(tidyverse)
+  library(magrittr)
+  library(MAST) #renv::install("RGLab/MAST")
+  
+  load(file = "./Data/setup1_b3_sav.RData")
 }
 
 #Save memory by only keeping necessary variables
 # rm(list=setdiff(ls(), c("sca_l", "sca_d42", "sca_d00")))
+rm(gse, raw, raw_gene, egENSEMBL_tb, egSymbol_tb, gene_info)
+
+################################################################################
+#Checks
+if (FALSE) {
+  sum(sca_d42@colData@listData[["treatment"]]=="vaccine")
+  sum(sca_d42@colData@listData[["treatment"]]=="control")
+  
+  sum(sca_d00@colData@listData[["treatment"]]=="vaccine")
+  sum(sca_d00@colData@listData[["treatment"]]=="control")
+  
+  #####
+  summary(sca_d00@colData@listData[["indiv"]])
+  summary(sca_d42@colData@listData[["indiv"]])
+  
+  summary(sca_l@colData@listData[["indiv"]])
+}
 
 ################################################################################
 #Convenience for later on:
@@ -31,6 +48,9 @@ norm_2sp(0)
 norm_2sp(1.96)
 
 ################################################################################
+#Method 1: using baseline et matrix: columns match day42 samples
+#...but entries have average day0 et of the corresponding individual
+
 #A matrix of individual:gene specific baselines in et = log2(TPM+1)
 #Subset with day 0 only
 samp_d00_mx <- as_tibble(sca_d00@assays@data@listData[["et"]])
@@ -83,43 +103,29 @@ for (i in sca_d42@colData@listData[["indiv"]]) {
   }
 }
 
+####################
+#Cycle through each gene
+#Perform zlm
+#Store the results in a list
+#Before attempting loop, first just try one gene
+i <-  1
+tb_42_v_00 <- tibble(
+  et42 = as.matrix(sca_d42@assays@data@listData[["et"]][i,]), 
+  age.group = sca_d42@colData@listData[["age.group"]], 
+  days_post = sca_d42@colData@listData[["days_post"]],
+  CDR = sca_d42@colData@listData[["CDR"]],
+  et00 = t(base_match_d42_mx[i,])
+)
 
+zlm_out_a <- zlm(
+  et42 ~ age.group + et00 + CDR, 
+  sca = tb_42_v_00
+)
 
-################################################################################
-#Model
-zlm_a <- zlm(~age.group, sca_d42)
-#(will also need indiv average of day0 in et and vaccine status)
-
-#Save point immediately after the zlm model gets fit (to save time)
-if (FALSE) {
-  save.image(file = "./Data/zlm1_a_sav.RData")
-}
-
-if (FALSE) {
-  load(file = "./Data/zlm1_a_sav.RData")
-}
-
-#Results
-est_a <- summary(zlm_a)
-
-#Table part of results
-tb_a <- as_tibble(est_a[["datatable"]]) %>% 
-  mutate(p_val = norm_2sp(z))
-
-summary(as_factor(tb_a$component))
-summary(as_factor(tb_a$contrast))
-
-#Test genes for the age.group coefficient
-test_age <- summary(zlm_a, doLRT = "age.group67-86yo")
-test_age2 <- as_tibble(test_age[["datatable"]]) 
-test_age3 <- dplyr::filter(test_age2, component == "logFC")
-test_age4 <- test_age3 %>% mutate(p_val = norm_2sp(z)) %>% 
-  mutate()
-
-ggplot(data = test_age4, aes(x=p_val)) +
-  geom_histogram(binwidth = 0.05, boundary = 0)
-
-print(test_age, n = 10, by = "D")
+lm_out_a <- lm(
+  et42 ~ age.group + et00 + CDR, 
+  data = tb_42_v_00
+)
 
 ################################################################################
 #Gene enrichment
