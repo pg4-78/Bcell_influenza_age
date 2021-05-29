@@ -43,7 +43,7 @@ coord_PCA_fn <- function (object, k = 2, labels = TRUE, isLog = TRUE, ...) {
 ################################################################################
 #Select samples
 #Try, for example, extracting all samples from one individual
-pca_samp_select <- (raw2_samp$indiv=="602D")
+pca_samp_select <- raw2_samp # $indiv=="501T"
 #age.group = c("22-36yo", "67-86yo")
 #days_post = c("0", "42")
 #indiv = c(
@@ -54,7 +54,7 @@ pca_samp_select <- (raw2_samp$indiv=="602D")
 #)
 #alternatively, to continue without removing any samples
 #pca_samp_select <- raw2_samp
-
+#Between variation, mixed model
 #####
 #table of samples
 pca_samp <- raw2_samp[pca_samp_select==TRUE, ]

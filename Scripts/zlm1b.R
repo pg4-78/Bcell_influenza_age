@@ -1,0 +1,256 @@
+#Immediately after zlm1a
+#or alternatively, load save
+if(TRUE) {
+  #Clear
+  #...variables
+  rm(list=ls())
+  #...console
+  cat("\014\n")
+  #...graphs
+  tryCatch(dev.off(), error = function(e) {NULL})
+  dev.new()
+  
+  library(tidyverse)
+  library(ggrepel) #for volcano plot gene labels
+  library(magrittr)
+  library(MAST) #renv::install("RGLab/MAST")
+  
+  #Genes filtered by frac_active and avg_et
+  load(file = "./Data/zlm1a_sav.RData")
+}
+
+################################################################################
+if (FALSE) {
+  core_lim <- detectCores()
+  Sys.setenv("MC_CORES" = core_lim)
+  library(parallel)
+  options(mc.cores = core_lim)
+}
+print("Environment number of cores: ")
+print(Sys.getenv("MC_CORES"))
+print("-----")
+print("Options number of cores: ")
+print(options()[["mc.cores"]])
+
+################################################################################
+#Check
+summary(zlm_glmer@converged)
+
+################################################################################
+#Convenience for later on:
+#...define a function which converts a z-score to a 2-sided-p-value
+norm_2sp <- function(x) {
+  1 - (pnorm(q = abs(x), mean = 0, sd = 1) - pnorm(q = -abs(x), mean = 0, sd = 1))
+}
+
+norm_2sp(0)
+norm_2sp(1.96)
+ 
+################################################################################
+#Gene regression parameter estimates
+
+#Summary table: load previous save (TRUE); re-calculate (FALSE)
+if (TRUE) {
+  #all objects in the environment
+  load(file = "./Data/zlm_1b_mid_sav.RData")
+  #just the summary (estimates) of zlm_glmer
+  #> est <- readRDS(file = "./Data/zlm_1b_est_sav.rds")
+} else {
+  est <- summary(zlm_glmer, doLRT = TRUE)  
+}
+
+#Save?
+if (FALSE) {
+  #all objects in the environment
+  #> save.image(file = "./Data/zlm_1b_mid_sav.RData")
+  #just the summary (estimates) of zlm_glmer
+  #> saveRDS(est, file = "./Data/zlm_1b_est_sav.rds")
+}
+
+################################################################################
+est_dt <- as_tibble(est[["datatable"]]) %>% 
+  dplyr::arrange(primerid, contrast, component)
+est_dt$component %<>% as.factor()
+est_dt$contrast %<>% as.factor()
+
+#Discrete, Continuous, S (combined: has z-score but not coef or CI), logFC
+#Each gene has:
+#intercept (C, D, S)
+#age.group67-86yo (C, D, logFC, S)
+#age.group67-86yo:days_post42 (C, D, logFC, S)
+#days_post42 (C, D, logFC, S)
+summary(est_dt$component)
+summary(est_dt$contrast)
+
+#Check genes with NaN or NA
+est_alt <- est_dt %>% dplyr::filter(component != "S")
+est_alt <- est_alt[is.na(est_alt$coef),]
+levels(as.factor(est_alt$primerid))  
+#Should match number of failures here:
+summary(zlm_glmer@converged)
+
+################################################################################
+
+#Paste the gene names from gene information dataframe
+raw2_gene %<>% dplyr::arrange(primerid) 
+
+#From the test result objects, extract the logFC part of the genes
+#make p-value from z-score, make negative log 10 of p-value
+
+#...day (young unvaccinated to young vaccinated)
+# contrast == "days_post42"
+vacc_tb <- as_tibble(est[["datatable"]]) %>% 
+  arrange(primerid) %>% 
+  dplyr::filter(component == "logFC" & contrast == "days_post42") %>% 
+  mutate(p_val = norm_2sp(z)) %>% 
+  mutate(neg_log_10_p = -log10(p_val)) %>% 
+  bind_cols(raw2_gene[,c("EntrezGene","symbol")]) %>% 
+  dplyr::relocate(c("EntrezGene","symbol"), .after = "primerid") 
+vacc_tb$fdr <- p.adjust(vacc_tb$p_val, method = "BH")
+vacc_tb %<>% relocate("fdr", .after = "neg_log_10_p")
+
+#...age (young unvaccinated to old unvaccinated)
+# contrast == "age.group67-86yo"
+age_tb <- as_tibble(est[["datatable"]]) %>% 
+  arrange(primerid) %>% 
+  dplyr::filter(component == "logFC" & contrast == "age.group67-86yo") %>% 
+  mutate(p_val = norm_2sp(z)) %>% 
+  mutate(neg_log_10_p = -log10(p_val)) %>% 
+  bind_cols(raw2_gene[,c("EntrezGene","symbol")]) %>% 
+  dplyr::relocate(c("EntrezGene","symbol"), .after = "primerid") 
+age_tb$fdr <- p.adjust(age_tb$p_val, method = "BH")
+age_tb %<>% relocate("fdr", .after = "neg_log_10_p")
+
+#...interaction (young vaccinated to old vaccinated)
+inter_tb <- as_tibble(est[["datatable"]]) %>% 
+  arrange(primerid) %>% 
+  dplyr::filter(component == "logFC" & contrast == "age.group67-86yo:days_post42") %>% 
+  mutate(p_val = norm_2sp(z)) %>% 
+  mutate(neg_log_10_p = -log10(p_val)) %>% 
+  bind_cols(raw2_gene[,c("EntrezGene","symbol")]) %>% 
+  dplyr::relocate(c("EntrezGene","symbol"), .after = "primerid") 
+inter_tb$fdr <- p.adjust(inter_tb$p_val, method = "BH")
+inter_tb %<>% relocate("fdr", .after = "neg_log_10_p")
+
+#discrete
+inter_tb_d <- as_tibble(est[["datatable"]]) %>% 
+  arrange(primerid) %>% 
+  dplyr::filter(component == "D" & contrast == "age.group67-86yo:days_post42") %>% 
+  mutate(p_val = norm_2sp(z)) %>% 
+  mutate(neg_log_10_p = -log10(p_val)) %>% 
+  bind_cols(raw2_gene[,c("EntrezGene","symbol")]) %>% 
+  dplyr::relocate(c("EntrezGene","symbol"), .after = "primerid") 
+inter_tb_d$fdr <- p.adjust(inter_tb_d$p_val, method = "BH")
+inter_tb_d <- inter_tb_d %>% 
+  relocate(c("ci.lo", "coef", "ci.hi", "p_val", "fdr"), .after = "symbol") %>% 
+  arrange(p_val)
+inter_tb_d$ci.lo <- signif(inter_tb_d$ci.lo, 3)
+inter_tb_d$coef <- signif(inter_tb_d$coef, 3)
+inter_tb_d$ci.hi <- signif(inter_tb_d$ci.hi, 3)
+inter_tb_d$p_val <- signif(inter_tb_d$p_val, 2)
+inter_tb_d$fdr <- signif(inter_tb_d$fdr, 3)
+inter_tb_d$EntrezGene <- as.character(inter_tb_d$EntrezGene)
+
+#continuous
+inter_tb_c <- as_tibble(est[["datatable"]]) %>% 
+  arrange(primerid) %>% 
+  dplyr::filter(component == "C" & contrast == "age.group67-86yo:days_post42") %>% 
+  mutate(p_val = norm_2sp(z)) %>% 
+  mutate(neg_log_10_p = -log10(p_val)) %>% 
+  bind_cols(raw2_gene[,c("EntrezGene","symbol")]) %>% 
+  dplyr::relocate(c("EntrezGene","symbol"), .after = "primerid") 
+inter_tb_c$fdr <- p.adjust(inter_tb_c$p_val, method = "BH")
+inter_tb_c <- inter_tb_c %>% 
+  relocate(c("ci.lo", "coef", "ci.hi", "p_val", "fdr"), .after = "symbol") %>% 
+  arrange(p_val)
+inter_tb_c$ci.lo <- signif(inter_tb_c$ci.lo, 3)
+inter_tb_c$coef <- signif(inter_tb_c$coef, 3)
+inter_tb_c$ci.hi <- signif(inter_tb_c$ci.hi, 3)
+inter_tb_c$p_val <- signif(inter_tb_c$p_val, 2)
+inter_tb_c$fdr <- signif(inter_tb_c$fdr, 3)
+inter_tb_c$EntrezGene <- as.character(inter_tb_c$EntrezGene)
+
+if (FALSE) {
+  write_csv(inter_tb, file = "./Data/inter_tb.csv")
+  write_csv(inter_tb_d, file = "./Data/inter_tb_d.csv")
+  write_csv(inter_tb_c, file = "./Data/inter_tb_c.csv")
+}
+
+##########
+#Vaccine
+ggplot(data = vacc_tb, aes(x=p_val)) +
+  geom_histogram(binwidth = 0.05, boundary = 0, na.rm = TRUE) +
+  theme_bw() +
+  ggtitle("vacc hist")
+
+#Plot 
+ggplot(data = vacc_tb, aes(x=coef, y=neg_log_10_p)) +
+  geom_point(na.rm = TRUE) +
+  geom_label_repel(data = vacc_tb %>% filter(fdr < 0.05),
+    aes(label = symbol), 
+    color = "red", alpha = 0.5, nudge_y = 1, force = 1, max.overlaps = 30
+  ) + 
+  coord_cartesian(xlim = c(-5,5), ylim = c(0,10)) +
+  theme_bw() +
+  ggtitle("vacc volc")
+
+
+##########
+#Age
+ggplot(data = age_tb, aes(x=p_val)) +
+  geom_histogram(binwidth = 0.05, boundary = 0, na.rm = TRUE) +
+  theme_bw() +
+  ggtitle("age hist")
+
+#Plot 
+ggplot(data = age_tb, aes(x=coef, y=neg_log_10_p)) +
+  geom_point(na.rm = TRUE) +
+  geom_label_repel(data = age_tb %>% filter(fdr < 0.05),
+    aes(label = symbol), 
+    color = "red", alpha = 0.5, nudge_y = 1, force = 1, max.overlaps = 30
+  ) + 
+  coord_cartesian(xlim = c(-5,5), ylim = c(0,10)) +
+  theme_bw() +
+  ggtitle("age volc")
+
+##########
+#Interaction
+#Histogram
+ggplot(data = inter_tb, aes(x=p_val)) +
+  geom_histogram(binwidth = 0.025, boundary = 0, na.rm = TRUE, 
+    fill = "black", colour = "white", size = 0.2) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.20), minor_breaks = seq(0, 1, by = 0.025)) +
+  theme_bw() +
+  xlab("p-values for gene log fold changes") +
+  ylab("frequency") #+
+  #ggtitle(intervolc)
+
+#Volcano Plot 
+ggplot(data = inter_tb, aes(x=coef, y=neg_log_10_p)) +
+  geom_point(na.rm = TRUE, size = 1.5, alpha = 0.6, shape = 16) +
+  geom_label_repel(data = inter_tb %>% filter(fdr < 0.03),
+    aes(label = symbol), 
+    color = "red", alpha = 0.8, nudge_y = 2, nudge_x = 0, force = 2, force_pull = 3, max.overlaps = 30
+  ) + 
+  coord_cartesian(xlim = c(-5,5), ylim = c(0, 11)) +
+  scale_x_continuous(breaks = seq(-6, 6, by = 2), minor_breaks = seq(-6, 6, by = 1)) +
+  scale_y_continuous(breaks = seq(0, 11, by = 1), minor_breaks = NULL) +
+  theme_bw() +
+  xlab("log fold change (old age, vaccine (after): interaction)") +
+  ylab("-log10(p-value)") #+
+  #ggtitle("inter volc")
+
+################################################################################
+#Fitted baseline log odds of passing hurdle (young, day0)
+b1 <- tibble("coefD_base" = as.vector(zlm_glmer@coefD[,1]))
+ggplot(data = b1, aes(x=coefD_base)) +
+  geom_histogram(boundary = 0, binwidth = 0.25, na.rm = TRUE) +
+  scale_x_continuous(breaks = seq(-10, 5, by = 5), minor_breaks = seq(-10, 5, by = 1)) +
+  theme_bw()
+
+################################################################################
+#Test gene groups for the interaction term
+
+
+
+

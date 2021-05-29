@@ -222,10 +222,10 @@ sd(raw2_gene$avg_et)
 quantile(raw2_gene$avg_et, c(0, 0.025, 0.1, 0.25, 0.5, 0.75, 0.9, 0.975, 1))
 
 #Cutoff points
-min_frac_active <- 0.25 #quantile(raw2_gene$frac_active, 0)
+min_frac_active <- 0.10 #quantile(raw2_gene$frac_active, 0)
 max_frac_active <- quantile(raw2_gene$frac_active, 1)
-min_avg_et <- 0.004 #quantile(raw2_gene$avg_et, 0)
-max_avg_et <- quantile(raw2_gene$avg_et, 0.99)
+min_avg_et <-  0.6 #quantile(raw2_gene$avg_et, 0)
+max_avg_et <- quantile(raw2_gene$avg_et, 1)
 
 include_gene <- (
   (raw2_gene$frac_active >= min_frac_active) & 
