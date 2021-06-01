@@ -30,11 +30,23 @@ raw_gene %<>% bind_cols(gene_info)
 sum(!is.na(raw_gene$length)) #Strands with lengths
 sum(is.na(raw_gene$length)) #Strands without lengths
 
+
+#####
+#Column totals before gene filter
+raw_mx_bef_fltr <- raw %>% dplyr::select(-"Ensembl")
+
+tot_v_bef_fltr <- rep(0, dim(raw_mx_bef_fltr)[2])
+
+for (col in 1:dim(raw_mx_bef_fltr)[2]) {
+  tot_v_bef_fltr[col] <- sum(raw_mx_bef_fltr[,col])
+}
+
 ########################################
 #raw2 eventually gets split into count matrix (/transformed) and gene details
 #####
 #Filter to include only those with entries for length
 #Normalise counts by gene length and total counts in each sample
+
 raw2 <-  bind_cols(raw_gene, (raw %>% dplyr::select(-"Ensembl"))) %>% 
   filter(!is.na(length)) %>% 
   dplyr::mutate("klength" = length/1000) %>% 
@@ -45,7 +57,27 @@ raw2_mx_ct <- as.matrix(raw2 %>% dplyr::select(-c("Ensembl", "EntrezGene", "symb
 raw2_mx_et <- raw2_mx_ct
 raw2_klength <- as.vector(raw2$klength)
 
-#Normalise 1: Divide each row by gene length (KILObases) #
+#####
+#Column totals after gene filter
+tot_v_aft_fltr <- rep(0, dim(raw2_mx_ct)[2])
+
+for (col in 1:dim(raw2_mx_ct)[2]) {
+  tot_v_aft_fltr[col] <- sum(raw2_mx_ct[,col])
+}
+
+#Relationship of cell (column) count total after against before
+#filter for only genes with no length
+sum(tot_v_aft_fltr <= tot_v_bef_fltr)
+
+ggplot(data = tibble("bef" = tot_v_bef_fltr, "aft" = tot_v_aft_fltr)) +
+  geom_point(aes(x=bef,y=aft)) +
+  theme_bw() +
+  xlab("cell (column) count total before") +
+  ylab("cell (column) count total after") +
+  geom_abline(slope=1, intercept=0, colour="red")
+
+#####
+#Normalise 1: Divide each row by gene length (KILObases)
 for (row in 1:dim(raw2_mx_et)[1]) {
   if (sum(raw2_mx_et[row,]) > 0) {
     raw2_mx_et[row,] <- raw2_mx_et[row,] / raw2_klength[row]
@@ -197,16 +229,31 @@ raw2_samp$well %<>% factor(levels =
 summary(raw2_samp$well)
 levels(raw2_samp$well)
 
+################################################################################
 #CDR: proportion of genes above 0
 #Loop through each sample (matrix column)
-#Add it to the CDR column (as a sample covariate)
+#Add it to the CDR column (as a sample/cell/column detail)
 for (j in 1:dim(raw2_mx_et)[2]) {
   raw2_samp$CDR[j] = sum(raw2_mx_et[,j]!=0)/(dim(raw2_mx_et)[1])
 }
 summary(raw2_samp$CDR)
 
 ################################################################################
-#Filter genes
+#For testing
+#make an age factor variable recoded as 1 young, 0 old
+#make a vaccine factor variable recoded as 1 before, 0 after
+raw2_samp %<>% mutate("before" = ifelse(days_post==0,1,0))
+raw2_samp$before %<>% forcats::as_factor()
+
+raw2_samp %<>% mutate("young" = ifelse(age.group=="22-36yo",1,0))
+raw2_samp$young %<>% forcats::as_factor()
+
+#Double check the alternative coding
+table(raw2_samp$days_post, raw2_samp$before)
+table(raw2_samp$age.group, raw2_samp$young)
+
+################################################################################
+#Filter genes: cut low fraction active and low average et
 
 #Before
 dim(raw2_mx_et)[1]
@@ -255,7 +302,6 @@ quantile(raw2_gene$frac_active, c(0, 0.025, 0.1, 0.25, 0.5, 0.75, 0.9, 0.975, 1)
 mean(raw2_gene$avg_et)
 sd(raw2_gene$avg_et)
 quantile(raw2_gene$avg_et, c(0, 0.025, 0.1, 0.25, 0.5, 0.75, 0.9, 0.975, 1))
-
 
 ################################################################################
 #Checks 
@@ -334,15 +380,31 @@ dim(sca_d42)[2] + dim(sca_d00)[2]
 rm(n_gene, n_samp, row, col, i, j, temp, m, raw2_klength)
 
 #Save?
-#setup1_b1_sav: before MAST update
-#setup1_b2_sav: with MAST update
-#setup1_b3_sav: also with BSgenome, TxDb update
-#glmer_MAST_diagnose2: test version
-
 if (FALSE) {
   save.image(file = "./Data/setup1_b3_fltr_sav.RData")
 }
 
-#file = "./Data/glmer_MAST_diagnose2.RData"
-#file = "./Data/setup1_b3_sav.RData"
+if (FALSE) {
+  #updated with reverse coding included
+  #(young 1, old 0); (before 1, after 0)
+  sca_l_rev <- sca_l
+  rm(sca_l)
+  save.image(file = "./Data/setup1_b3_fltr_rev_sav.RData")
+}
+
+#setup1_b1_sav: before MAST update
+#setup1_b2_sav: with MAST update
+#setup1_b3_sav: also with BSgenome, TxDb update
+
+#no low expr filter yet: goes to zlm_test1
+#...to figure out what conditions make the model fail to converge
+#file = "./Data/setup1_b3_sav.RData" 
+
+#low expr filter active: goes to zlm1a
+#using the options: 
+#min_frac_active: 0.10 #min_avg_et: 0.6 
 #file = "./Data/setup1_b3_fltr_sav.RData"
+
+#also with reverse coding for testing
+#(young 1, old 0); (before 1, after 0)
+#file = "./Data/setup1_b3_fltr_rev_sav.RData"

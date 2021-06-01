@@ -117,6 +117,12 @@
       "Source": "Bioconductor",
       "Hash": "b17420379c5ef4c956f52362d8f824c8"
     },
+    "GO.db": {
+      "Package": "GO.db",
+      "Version": "3.12.1",
+      "Source": "Bioconductor",
+      "Hash": "1ed8d8ec3449f0c6fba5f1932ac333ae"
+    },
     "GenomeInfoDb": {
       "Package": "GenomeInfoDb",
       "Version": "1.26.7",
