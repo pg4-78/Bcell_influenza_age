@@ -1,3 +1,8 @@
+################################################################################
+#Script-file: setup1b.R
+#Description: data collation PART B
+################################################################################
+
 #Directly after running setup1a and answering prompt (database selection)
 #or alternatively
 if (TRUE) {
@@ -70,11 +75,11 @@ for (col in 1:dim(raw2_mx_ct)[2]) {
 sum(tot_v_aft_fltr <= tot_v_bef_fltr)
 
 ggplot(data = tibble("bef" = tot_v_bef_fltr, "aft" = tot_v_aft_fltr)) +
-  geom_point(aes(x=bef,y=aft)) +
+  geom_point(aes(x=bef,y=aft), size = 1) +
   theme_bw() +
-  xlab("cell (column) count total before") +
-  ylab("cell (column) count total after") +
-  geom_abline(slope=1, intercept=0, colour="red")
+  xlab("Cell (Column) Count Total Before") +
+  ylab("Cell (Column) Count Total After") +
+  geom_abline(slope=1, intercept=0, colour="red", size=0.7)
 
 #####
 #Normalise 1: Divide each row by gene length (KILObases)
@@ -239,7 +244,7 @@ for (j in 1:dim(raw2_mx_et)[2]) {
 summary(raw2_samp$CDR)
 
 ################################################################################
-#For testing
+#For testing: alternate coding
 #make an age factor variable recoded as 1 young, 0 old
 #make a vaccine factor variable recoded as 1 before, 0 after
 raw2_samp %<>% mutate("before" = ifelse(days_post==0,1,0))
@@ -335,11 +340,10 @@ for (i in levels(raw2_samp$indiv)){
 }
 
 #Age group by individual
-for (i in levels(raw2_samp$indiv)){
-  print(i)
-  print(summary(forcats::as_factor(raw2_samp[raw2_samp$indiv==i, "age.group"])))
-  print("----------")
-}
+table(raw2_samp$age.group, raw2_samp$indiv)
+
+#Age group by vaccine status
+table(raw2_samp$age.group, raw2_samp$days_post)
 
 #Age by individual
 for (i in levels(raw2_samp$indiv)){
@@ -347,8 +351,6 @@ for (i in levels(raw2_samp$indiv)){
   print(summary(forcats::as_factor(raw2_samp[raw2_samp$indiv==i, "age"])))
   print("----------")
 }
-
-table(raw2_samp$days_post, raw2_samp$indiv)
 
 ################################################################################
 #Gather all the required parts to form the SingleCellAssay object

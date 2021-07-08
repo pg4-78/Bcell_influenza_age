@@ -1,3 +1,8 @@
+################################################################################
+#Script-file: setup1a.R
+#Description: data collation PART A
+################################################################################
+
 #raw: original dataset
 #raw2: only genes with length data available
 #SingleCellAssay objects (only genes with length data available):

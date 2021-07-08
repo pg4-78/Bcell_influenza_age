@@ -1,3 +1,9 @@
+################################################################################
+#Script-file: zlm1a.R
+#Description: Main hurdle model for vaccine/age part B
+#... volcano plots, gene enrichment, p-value distribution histograms
+################################################################################
+
 #Immediately after zlm1a
 #or alternatively, load save
 #or go to the save after the summary zlm command
@@ -205,40 +211,56 @@ if (FALSE) {
 #Vaccine
 #p-value hist
 ggplot(data = vacc_tb_f, aes(x=p_val)) +
-  geom_histogram(binwidth = 0.05, boundary = 0, na.rm = TRUE) +
+  geom_histogram(binwidth = 0.025, boundary = 0, na.rm = TRUE, 
+    fill = "black", colour = "white", size = 0.2) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.20), minor_breaks = seq(0, 1, by = 0.025)) +
   theme_bw() +
-  ggtitle("vacc hist")
+  xlab("p-values for Vaccine log Fold-Changes") +
+  ylab("Frequency")
+  #ggtitle("vacc hist")
 
 #Volcano Plot 
 ggplot(data = vacc_tb_f, aes(x=coef, y=neg_log_10_p)) +
-  geom_point(na.rm = TRUE) +
-  geom_label_repel(data = vacc_tb_f %>% filter(fdr < 0.05),
+  geom_point(na.rm = TRUE, size = 1.5, alpha = 0.6, shape = 16) +
+  geom_label_repel(data = vacc_tb_f %>% filter(fdr < 0.005),
     aes(label = symbol), 
-    color = "red", alpha = 0.5, nudge_y = 1, force = 1, max.overlaps = 30
+    color = "red", alpha = 0.8, nudge_y = 1, force = 1, max.overlaps = 50
   ) + 
-  coord_cartesian(xlim = c(-5,5), ylim = c(0,10)) +
+  coord_cartesian(xlim = c(-5,5), ylim = c(0, 11)) +
+  scale_x_continuous(breaks = seq(-6, 6, by = 2), minor_breaks = seq(-6, 6, by = 1)) +
+  scale_y_continuous(breaks = seq(0, 11, by = 1), minor_breaks = NULL) +
   theme_bw() +
-  ggtitle("vacc volc")
+  xlab("log2(Fold-Change) for Vaccination") +
+  ylab("-log10(p-value)") #+
+  #ggtitle("vacc volc")
 
 
 ##########
 #Age
 #p-value hist
 ggplot(data = age_tb_f, aes(x=p_val)) +
-  geom_histogram(binwidth = 0.05, boundary = 0, na.rm = TRUE) +
+  geom_histogram(binwidth = 0.025, boundary = 0, na.rm = TRUE, 
+    fill = "black", colour = "white", size = 0.2) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.20), minor_breaks = seq(0, 1, by = 0.025)) +
   theme_bw() +
-  ggtitle("age hist")
+  xlab("p-values for Age log Fold-Changes") +
+  ylab("Frequency") #+
+  #ggtitle("age hist")
 
 #Volcano Plot 
 ggplot(data = age_tb_f, aes(x=coef, y=neg_log_10_p)) +
-  geom_point(na.rm = TRUE) +
+  geom_point(na.rm = TRUE, size = 1.5, alpha = 0.6, shape = 16) +
   geom_label_repel(data = age_tb_f %>% filter(fdr < 0.05),
     aes(label = symbol), 
-    color = "red", alpha = 0.5, nudge_y = 1, force = 1, max.overlaps = 30
+    color = "red", alpha = 0.8, nudge_y = 1, force = 1, max.overlaps = 30
   ) + 
-  coord_cartesian(xlim = c(-5,5), ylim = c(0,10)) +
+  coord_cartesian(xlim = c(-5,5), ylim = c(0, 11)) +
+  scale_x_continuous(breaks = seq(-6, 6, by = 2), minor_breaks = seq(-6, 6, by = 1)) +
+  scale_y_continuous(breaks = seq(0, 11, by = 1), minor_breaks = NULL) +
   theme_bw() +
-  ggtitle("age volc")
+  xlab("log2(Fold-Change) for Age") +
+  ylab("-log10(p-value)") #+
+  #ggtitle("age volc")
 
 ##########
 
@@ -249,8 +271,8 @@ ggplot(data = inter_tb_f, aes(x=p_val)) +
     fill = "black", colour = "white", size = 0.2) +
   scale_x_continuous(breaks = seq(0, 1, by = 0.20), minor_breaks = seq(0, 1, by = 0.025)) +
   theme_bw() +
-  xlab("p-values for gene log fold changes") +
-  ylab("frequency") #+
+  xlab("p-values for Interaction log Fold-Changes") +
+  ylab("Frequency") #+
   #ggtitle(intervolc)
 
 #Volcano Plot log fold change
@@ -264,14 +286,16 @@ ggplot(data = inter_tb_f, aes(x=coef, y=neg_log_10_p)) +
   scale_x_continuous(breaks = seq(-6, 6, by = 2), minor_breaks = seq(-6, 6, by = 1)) +
   scale_y_continuous(breaks = seq(0, 11, by = 1), minor_breaks = NULL) +
   theme_bw() +
-  xlab("log fold change (old age, vaccine (after): interaction)") +
+  xlab("log2(Fold-Change) for interaction") +
   ylab("-log10(p-value)") #+
   #ggtitle("inter volc log fold change")
+
+#####
 
 #Volcano Plot discrete
 ggplot(data = inter_tb_d, aes(x=coef, y=neg_log_10_p)) +
   geom_point(na.rm = TRUE, size = 1.5, alpha = 0.6, shape = 16) +
-  geom_label_repel(data = inter_tb_d %>% filter(fdr < 0.20),
+  geom_label_repel(data = inter_tb_d %>% filter(fdr < 0.05),
     aes(label = symbol), 
     color = "black", alpha = 0.8, nudge_y = 2, nudge_x = 0, force = 2, force_pull = 3, max.overlaps = 30
   ) + 
@@ -279,7 +303,7 @@ ggplot(data = inter_tb_d, aes(x=coef, y=neg_log_10_p)) +
   scale_x_continuous(breaks = seq(-6, 6, by = 2), minor_breaks = seq(-6, 6, by = 1)) +
   scale_y_continuous(breaks = seq(0, 11, by = 1), minor_breaks = NULL) +
   theme_bw() +
-  xlab("log odds ratio \n (old age, vaccine (after): interaction)") +
+  xlab("log(Odds Ratio) for Interaction") +
   ylab("-log10(p-value)") #+
   #ggtitle("inter volc disc")
 
@@ -294,7 +318,7 @@ ggplot(data = inter_tb_c, aes(x=coef, y=neg_log_10_p)) +
   scale_x_continuous(breaks = seq(-6, 6, by = 2), minor_breaks = seq(-6, 6, by = 1)) +
   scale_y_continuous(breaks = seq(0, 11, by = 1), minor_breaks = NULL) +
   theme_bw() +
-  xlab("mean difference in et \n (old age, vaccine (after): interaction)") +
+  xlab("Mean Difference in et for Interaction") +
   ylab("-log10(p-value)") #+
   #ggtitle("inter cont")
 
@@ -330,7 +354,7 @@ ggplot(data = temp_d_vs_c) +
   ylab("mean difference in et \n (old age, vaccine (after): interaction)") +
   geom_label_repel(data = temp_d_vs_c %>% filter(fdr_f < 0.03),
     aes(x=coef_d, y=coef_c, label = symbol), 
-    color = "red", alpha = 0.8, nudge_y = 0, nudge_x = 0, force = 2, force_pull = 3, max.overlaps = 30
+    color = "red", alpha = 0.8, nudge_y = 0, nudge_x = -2, force = 2, force_pull = 3, max.overlaps = 30
   ) +
   theme_bw() #+
   #ggtitle("inter volc")
@@ -351,13 +375,13 @@ inter_tb_d_psort <- inter_tb_d %>% dplyr::arrange(p_val)
 inter_tb_c_psort <- inter_tb_c %>% dplyr::arrange(p_val) 
 
 top_f <- inter_tb_f_psort %>% dplyr::filter(fdr < 0.05)
-top_d <- inter_tb_d_psort %>% dplyr::filter(fdr < 0.05)
+top_d <- inter_tb_d_psort %>% dplyr::filter(fdr < 0.05) #empty
 top_c <- inter_tb_c_psort %>% dplyr::filter(fdr < 0.05)
 
 if (FALSE) {
-  write_csv(top_f, file = "./Data/top_f.csv")
-  write_csv(top_d, file = "./Data/top_d.csv")
-  write_csv(top_c, file = "./Data/top_c.csv")
+  write_csv(top_f, file = "./Data/2btop_f.csv")
+  write_csv(inter_tb_d_psort, file = "./Data/2btop_dz.csv")
+  write_csv(top_c, file = "./Data/2btop_c.csv")
 }
 
 #renv::install("bioc::GO.db")
@@ -370,4 +394,9 @@ top_f_go_mf <- top_f_go %>% dplyr::filter(Ont == "MF")
 
 top_f_kg <- tibble(kegga(top_f$EntrezGene, species = "Hs")) %>% dplyr::arrange(P.DE)
 
-
+if (FALSE) {
+  write_csv(top_f_go_cc, file = "./Data/2btop_f_go_cc.csv")
+  write_csv(top_f_go_bp, file = "./Data/2btop_f_go_bp.csv")
+  write_csv(top_f_go_mf, file = "./Data/2btop_f_go_mf.csv")
+  write_csv(top_f_kg, file = "./Data/2btop_f_kg.csv")
+}

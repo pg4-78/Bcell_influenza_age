@@ -1,4 +1,9 @@
-#After zlm1a
+################################################################################
+#Script-file: diagnostic2.R
+#Description: histogram and cdf to show excess zeros
+################################################################################
+
+#immediately after setup1a, setup1b
 #or alternatively, load save
 if(TRUE) {
   #Clear
@@ -48,7 +53,7 @@ raw2_gene <- bind_cols(raw2_gene, "num" = 1:dim(raw2_gene)[1])
 
 
 if (TRUE) {
-  g <- 5077
+  g <- 1405
 } else {
   g <- 1:dim(raw2_gene)[1]
 }
@@ -75,8 +80,8 @@ ggplot(data = tibble("et" = as.vector(raw2_mx_et[g,s])), aes(x=et)) +
   geom_hline(yintercept=0, colour = "black", size = 0.5) +
   coord_cartesian(x = c(0, 12), y = c(0, 650)) + 
   theme_bw() +
-  xlab("et (transformed count)") +
-  ylab("frequency")
+  xlab("et (Transformed Count)") +
+  ylab("Frequency")
 
 #check et cdf
 ggplot(data = tibble("et" = round(as.vector(raw2_mx_et[g,s]), digits = 3)), aes(x=et)) +
@@ -85,8 +90,8 @@ ggplot(data = tibble("et" = round(as.vector(raw2_mx_et[g,s]), digits = 3)), aes(
   scale_y_continuous(minor_breaks = seq(0, 1, by=0.1), breaks = seq(0, 1, by=0.2)) +
   coord_cartesian(x = c(0, 12), y = c(0, 1)) + 
   theme_bw() +
-  xlab("et (transformed count)") +
-  ylab("cumulative distribution function")
+  xlab("et (Transformed Count)") +
+  ylab("Cumulative Distribution Function")
 
 ####################
 #Check qq plot
@@ -102,4 +107,3 @@ ggplot(data = a2, aes(sample=et)) +
   geom_qq() +
   geom_qq_line(col = "red") + 
   theme_bw()
-

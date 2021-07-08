@@ -1,3 +1,9 @@
+################################################################################
+#Script-file: zlm_test1.R
+#Description: check conditions which make hurdle regression fail to converge
+#...fraction of genes active / average transformed count: et
+################################################################################
+
 #Immediately after setup1a, setup1b
 #Alternatively, load saved results of setup1a, setup1b
 if (TRUE) {

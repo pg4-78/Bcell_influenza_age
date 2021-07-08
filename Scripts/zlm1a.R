@@ -1,3 +1,8 @@
+################################################################################
+#Script-file: zlm1a.R
+#Description: Main hurdle model for vaccine/age part A
+################################################################################
+
 #Immediately after setup1a, setup1b
 #Alternatively, load saved results of setup1a, setup1b
 if (TRUE) {
